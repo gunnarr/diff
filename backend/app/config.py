@@ -15,6 +15,16 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite+aiosqlite:///./newsdiff.db"
 
+    def get_database_url(self) -> str:
+        """Get database URL with correct async driver."""
+        url = self.DATABASE_URL
+        # Convert Railway's postgres:// to postgresql+asyncpg://
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgresql://") and "+asyncpg" not in url:
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return url
+
     # CORS - can be set as JSON string in env var
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
 
