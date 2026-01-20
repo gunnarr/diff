@@ -1,12 +1,12 @@
 """Base scraper abstract class."""
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict
+import asyncio
 import httpx
 import trafilatura
 import feedparser
 from bs4 import BeautifulSoup
 from datetime import datetime
-from app.core.rate_limiter import RateLimiter
 from app.core.text_utils import clean_text
 from app.config import settings
 
@@ -16,7 +16,6 @@ class BaseScraper(ABC):
 
     def __init__(self, source_name: str):
         self.source_name = source_name
-        self.rate_limiter = RateLimiter()
         self.client = httpx.AsyncClient(
             timeout=30.0,
             headers={
@@ -88,7 +87,7 @@ class BaseScraper(ABC):
 
     async def fetch_article(self, url: str) -> Dict:
         """Fetch and extract article content."""
-        await self.rate_limiter.wait(self.source_name)
+        await asyncio.sleep(5.0)  # Rate limit: 5 seconds between requests
 
         try:
             response = await self.client.get(url)
@@ -226,7 +225,7 @@ class BaseScraper(ABC):
 
     async def _parse_rss(self, feed_url: str) -> List[str]:
         """Parse RSS feed and extract article URLs."""
-        await self.rate_limiter.wait(self.source_name)
+        await asyncio.sleep(5.0)  # Rate limit: 5 seconds between requests
 
         try:
             response = await self.client.get(feed_url)
