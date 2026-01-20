@@ -1,6 +1,8 @@
 """Scraper service orchestration."""
 from datetime import datetime
 from typing import List, Dict, Optional
+import hashlib
+from urllib.parse import urlparse, urlunparse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models import NewsSource, Article, ArticleVersion
@@ -9,12 +11,34 @@ from app.scrapers import (
     GenericRSSScraper,
     BaseScraper
 )
-from app.utils.hash import content_hash
-from app.utils.url_utils import normalize_url
-from app.core.text_utils import count_words
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+# Inline utility functions
+def __content_hash(text: str) -> str:
+    """Generate SHA256 hash of text content."""
+    return hashlib.sha256(text.encode('utf-8')).hexdigest()
+
+
+def __normalize_url(url: str) -> str:
+    """Normalize URL by removing fragments."""
+    parsed = urlparse(url)
+    normalized = urlunparse((
+        parsed.scheme,
+        parsed.netloc,
+        parsed.path,
+        parsed.params,
+        parsed.query,
+        ''  # Remove fragment
+    ))
+    return normalized.rstrip('/')
+
+
+def __count_words(text: str) -> int:
+    """Count words in text."""
+    return len(text.split()) if text else 0
 
 
 class ScraperService:
@@ -116,7 +140,7 @@ class ScraperService:
 
     async def _process_article(self, source: NewsSource, scraper: BaseScraper, url: str):
         """Process a single article URL."""
-        normalized_url = normalize_url(url)
+        normalized_url = _normalize_url(url)
 
         # Check if article exists
         result = await self.db.execute(
@@ -132,7 +156,7 @@ class ScraperService:
             return
 
         # Calculate content hash
-        c_hash = content_hash(article_data['content'])
+        c_hash = _content_hash(article_data['content'])
 
         # If article doesn't exist, create it
         if not article:
@@ -157,9 +181,9 @@ class ScraperService:
                 title=article_data['title'],
                 byline=article_data['byline'],
                 content=article_data['content'],
-                content_hash=c_hash,
+                _content_hash=c_hash,
                 captured_at=datetime.utcnow(),
-                word_count=count_words(article_data['content']),
+                word_count=_count_words(article_data['content']),
                 meta_description=article_data['meta_description'],
                 meta_keywords=article_data['meta_keywords'],
                 published_date=article_data['published_date'],
@@ -185,7 +209,7 @@ class ScraperService:
             latest_version = result.scalar_one_or_none()
 
             # Check if content changed
-            if latest_version and latest_version.content_hash != c_hash:
+            if latest_version and latest_version._content_hash != c_hash:
                 # Content changed, create new version
                 new_version_number = latest_version.version_number + 1
                 article.version_count = new_version_number
@@ -198,9 +222,9 @@ class ScraperService:
                     title=article_data['title'],
                     byline=article_data['byline'],
                     content=article_data['content'],
-                    content_hash=c_hash,
+                    _content_hash=c_hash,
                     captured_at=datetime.utcnow(),
-                    word_count=count_words(article_data['content']),
+                    word_count=_count_words(article_data['content']),
                     meta_description=article_data['meta_description'],
                     meta_keywords=article_data['meta_keywords'],
                     published_date=article_data['published_date'],

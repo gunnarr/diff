@@ -29,17 +29,12 @@ class ArticleVersionResponse(ArticleVersionBase):
 
 
 class ArticleVersionSummary(BaseModel):
-    """Compact version info for lists."""
+    """Compact version info for lists (excludes content for performance)."""
     id: int
     version_number: int
     title: Optional[str]
-    content: str
     captured_at: datetime
     word_count: Optional[int]
-    byline: Optional[str] = None
-    published_date: Optional[datetime] = None
-    meta_description: Optional[str] = None
-    meta_keywords: Optional[str] = None
 
     class Config:
         from_attributes = True

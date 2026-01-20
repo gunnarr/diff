@@ -19,6 +19,53 @@ from app.utils.slug import slugify
 router = APIRouter()
 
 
+def _build_article_detail_response(article: Article) -> ArticleDetailResponse:
+    """Build article detail response from article model (with loaded relationships)."""
+    # Build version summaries (lightweight, no content)
+    version_summaries = [
+        ArticleVersionSummary(
+            id=v.id,
+            version_number=v.version_number,
+            title=v.title,
+            captured_at=v.captured_at,
+            word_count=v.word_count
+        )
+        for v in article.versions
+    ]
+
+    # Build source response
+    source_response = None
+    if article.source:
+        source_response = NewsSourceResponse(
+            id=article.source.id,
+            name=article.source.name,
+            base_url=article.source.base_url,
+            scraper_class=article.source.scraper_class,
+            is_active=article.source.is_active,
+            scrape_interval_active=article.source.scrape_interval_active,
+            scrape_interval_archive=article.source.scrape_interval_archive,
+            max_articles_per_scrape=article.source.max_articles_per_scrape,
+            created_at=article.source.created_at,
+            article_count=0
+        )
+
+    return ArticleDetailResponse(
+        id=article.id,
+        source_id=article.source_id,
+        url=article.url,
+        canonical_url=article.canonical_url,
+        title=article.title,
+        is_active=article.is_active,
+        first_seen_at=article.first_seen_at,
+        last_checked_at=article.last_checked_at,
+        last_modified_at=article.last_modified_at,
+        check_count=article.check_count,
+        version_count=article.version_count,
+        source=source_response,
+        versions=version_summaries
+    )
+
+
 @router.get("/articles", response_model=PaginatedArticlesResponse)
 async def get_articles(
     source: Optional[str] = Query(None, description="Filter by source name"),
@@ -58,7 +105,7 @@ async def get_articles(
     result = await db.execute(query)
     articles = result.scalars().all()
 
-    # Build response with latest version info
+    # Build response with latest version info (lightweight)
     items = []
     for article in articles:
         # Get latest version from already-loaded relationship (no extra query!)
@@ -70,7 +117,6 @@ async def get_articles(
                 id=latest_version.id,
                 version_number=latest_version.version_number,
                 title=latest_version.title,
-                content=latest_version.content,
                 captured_at=latest_version.captured_at,
                 word_count=latest_version.word_count
             )
@@ -127,52 +173,7 @@ async def get_article_by_slug(
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
 
-    # Use already-loaded relationships (no extra queries!)
-    source = article.source
-    versions = article.versions
-
-    version_summaries = [
-        ArticleVersionSummary(
-            id=v.id,
-            version_number=v.version_number,
-            title=v.title,
-            content=v.content,
-            captured_at=v.captured_at,
-            word_count=v.word_count
-        )
-        for v in versions
-    ]
-
-    source_response = None
-    if source:
-        source_response = NewsSourceResponse(
-            id=source.id,
-            name=source.name,
-            base_url=source.base_url,
-            scraper_class=source.scraper_class,
-            is_active=source.is_active,
-            scrape_interval_active=source.scrape_interval_active,
-            scrape_interval_archive=source.scrape_interval_archive,
-            max_articles_per_scrape=source.max_articles_per_scrape,
-            created_at=source.created_at,
-            article_count=0
-        )
-
-    return ArticleDetailResponse(
-        id=article.id,
-        source_id=article.source_id,
-        url=article.url,
-        canonical_url=article.canonical_url,
-        title=article.title,
-        is_active=article.is_active,
-        first_seen_at=article.first_seen_at,
-        last_checked_at=article.last_checked_at,
-        last_modified_at=article.last_modified_at,
-        check_count=article.check_count,
-        version_count=article.version_count,
-        source=source_response,
-        versions=version_summaries
-    )
+    return _build_article_detail_response(article)
 
 
 @router.get("/articles/{article_id}", response_model=ArticleDetailResponse)
@@ -192,49 +193,4 @@ async def get_article(
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
 
-    # Use already-loaded relationships (no extra queries!)
-    source = article.source
-    versions = article.versions
-
-    version_summaries = [
-        ArticleVersionSummary(
-            id=v.id,
-            version_number=v.version_number,
-            title=v.title,
-            content=v.content,
-            captured_at=v.captured_at,
-            word_count=v.word_count
-        )
-        for v in versions
-    ]
-
-    source_response = None
-    if source:
-        source_response = NewsSourceResponse(
-            id=source.id,
-            name=source.name,
-            base_url=source.base_url,
-            scraper_class=source.scraper_class,
-            is_active=source.is_active,
-            scrape_interval_active=source.scrape_interval_active,
-            scrape_interval_archive=source.scrape_interval_archive,
-            max_articles_per_scrape=source.max_articles_per_scrape,
-            created_at=source.created_at,
-            article_count=0
-        )
-
-    return ArticleDetailResponse(
-        id=article.id,
-        source_id=article.source_id,
-        url=article.url,
-        canonical_url=article.canonical_url,
-        title=article.title,
-        is_active=article.is_active,
-        first_seen_at=article.first_seen_at,
-        last_checked_at=article.last_checked_at,
-        last_modified_at=article.last_modified_at,
-        check_count=article.check_count,
-        version_count=article.version_count,
-        source=source_response,
-        versions=version_summaries
-    )
+    return _build_article_detail_response(article)

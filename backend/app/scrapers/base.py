@@ -2,13 +2,23 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict
 import asyncio
+import re
 import httpx
 import trafilatura
 import feedparser
 from bs4 import BeautifulSoup
 from datetime import datetime
-from app.core.text_utils import clean_text
 from app.config import settings
+
+
+def __clean_text(text: str) -> str:
+    """Clean and normalize text."""
+    if not text:
+        return ""
+    # Remove excessive whitespace
+    text = re.sub(r'\s+', ' ', text)
+    # Remove leading/trailing whitespace
+    return text.strip()
 
 
 class BaseScraper(ABC):
@@ -110,7 +120,7 @@ class BaseScraper(ABC):
             # Extract metadata
             soup = BeautifulSoup(html, 'html.parser')
 
-            title = clean_text(self._extract_title(soup))
+            title = _clean_text(self._extract_title(soup))
 
             # Check if this is a live article based on title
             if self.is_live_article(url, title):
@@ -118,11 +128,11 @@ class BaseScraper(ABC):
 
             return {
                 'title': title,
-                'content': clean_text(content) if content else "",
-                'byline': clean_text(self._extract_byline(soup)),
+                'content': _clean_text(content) if content else "",
+                'byline': _clean_text(self._extract_byline(soup)),
                 'published_date': self._extract_published_date(soup),
                 'modified_date': self._extract_modified_date(soup),
-                'meta_description': clean_text(self._extract_meta_description(soup)),
+                'meta_description': _clean_text(self._extract_meta_description(soup)),
                 'meta_keywords': self._extract_meta_keywords(soup)
             }
         except Exception as e:
