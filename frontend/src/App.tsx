@@ -3,7 +3,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { HomePage } from './pages/HomePage'
 import { ArticlePage } from './pages/ArticlePage'
 import { useDarkMode } from './hooks/useDarkMode'
-import { LanguageProvider } from './contexts/LanguageContext'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,17 +18,15 @@ function App() {
   useDarkMode()
 
   return (
-    <LanguageProvider>
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/articles/:date/:slug" element={<ArticlePage />} />
-            <Route path="/articles/:id" element={<ArticlePage />} />
-          </Routes>
-        </BrowserRouter>
-      </QueryClientProvider>
-    </LanguageProvider>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/articles/:date/:slug" element={<ArticlePage />} />
+          <Route path="/articles/:id" element={<ArticlePage />} />
+        </Routes>
+      </BrowserRouter>
+    </QueryClientProvider>
   )
 }
 

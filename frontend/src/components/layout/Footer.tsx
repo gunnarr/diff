@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../api/client'
-import { useLanguage } from '../../contexts/LanguageContext'
 
 interface Stats {
   total_articles: number
@@ -11,7 +10,6 @@ interface Stats {
 }
 
 export const Footer = () => {
-  const { t } = useLanguage()
   const { data: stats } = useQuery<Stats>({
     queryKey: ['stats'],
     queryFn: async () => {
@@ -31,35 +29,35 @@ export const Footer = () => {
             <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
               {stats.total_articles}
             </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">{t.totalArticles}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Totalt artiklar</div>
           </div>
           <div>
             <div className="text-2xl font-bold text-green-600 dark:text-green-400">
               {stats.total_versions}
             </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">{t.totalVersions}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Totalt versioner</div>
           </div>
           <div>
             <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
               {stats.articles_with_changes}
             </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">{t.withChanges}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Med ändringar</div>
           </div>
           <div>
             <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
               {stats.active_sources}
             </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">{t.activeSources}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Aktiva källor</div>
           </div>
           <div>
             <div className="text-2xl font-bold text-gray-600 dark:text-gray-400">
               {stats.total_sources}
             </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">{t.totalSources}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Totalt källor</div>
           </div>
         </div>
         <div className="text-center mt-4 text-xs text-gray-500 dark:text-gray-400">
-          {t.footerSubtitle}
+          Spårar ändringar i svenska nyhetsartiklar
         </div>
       </div>
     </footer>
