@@ -26,7 +26,11 @@ class Settings(BaseSettings):
         return url
 
     # CORS - can be set as JSON string in env var
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://192.168.86.4:5173"  # Local network access for mobile
+    ]
 
     # Scraping
     USER_AGENT: str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
