@@ -16,66 +16,6 @@ WORKING_SOURCES = [
         'max_articles_per_scrape': 50,
         'country': 'SE'
     },
-    {
-        'name': 'NRK Nyheter',
-        'base_url': 'https://www.nrk.no/nyheter',
-        'scraper_class': 'NRKNyheterScraper',
-        'is_active': True,
-        'scrape_interval_active': 15,
-        'scrape_interval_archive': 60,
-        'max_articles_per_scrape': 50,
-        'country': 'NO'
-    },
-    {
-        'name': 'DR Nyheder',
-        'base_url': 'https://www.dr.dk/nyheder',
-        'scraper_class': 'DRNyhederScraper',
-        'is_active': True,
-        'scrape_interval_active': 15,
-        'scrape_interval_archive': 60,
-        'max_articles_per_scrape': 50,
-        'country': 'DK'
-    },
-    {
-        'name': 'Aftonbladet',
-        'base_url': 'https://www.aftonbladet.se',
-        'scraper_class': 'AftonbladetScraper',
-        'is_active': True,
-        'scrape_interval_active': 15,
-        'scrape_interval_archive': 60,
-        'max_articles_per_scrape': 50,
-        'country': 'SE'
-    },
-    {
-        'name': 'Sveriges Radio',
-        'base_url': 'https://sverigesradio.se/nyheter',
-        'scraper_class': 'SverigesRadioScraper',
-        'is_active': True,
-        'scrape_interval_active': 15,
-        'scrape_interval_archive': 60,
-        'max_articles_per_scrape': 50,
-        'country': 'SE'
-    },
-    {
-        'name': 'Göteborgs-Posten',
-        'base_url': 'https://www.gp.se',
-        'scraper_class': 'GenericRSSScraper',
-        'is_active': True,
-        'scrape_interval_active': 15,
-        'scrape_interval_archive': 60,
-        'max_articles_per_scrape': 50,
-        'country': 'SE'
-    },
-    {
-        'name': 'Svenska Dagbladet',
-        'base_url': 'https://www.svd.se',
-        'scraper_class': 'SvDScraper',
-        'is_active': True,
-        'scrape_interval_active': 15,
-        'scrape_interval_archive': 60,
-        'max_articles_per_scrape': 50,
-        'country': 'SE'
-    },
 ]
 
 
