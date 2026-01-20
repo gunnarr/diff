@@ -22,7 +22,7 @@ export const articlesApi = {
     fromVersion: number,
     toVersion: number
   ): Promise<DiffResponse> => {
-    const { data } = await apiClient.get(`/articles/${articleId}/diff`, {
+    const { data } = await apiClient.get(`/diff/${articleId}`, {
       params: { from_version: fromVersion, to_version: toVersion },
     })
     return data

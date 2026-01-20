@@ -8,7 +8,7 @@ from app.schemas import DiffResponse
 router = APIRouter()
 
 
-@router.get("/articles/{article_id}/diff", response_model=DiffResponse)
+@router.get("/diff/{article_id}", response_model=DiffResponse)
 async def get_article_diff(
     article_id: int,
     from_version: int = Query(..., description="Starting version number"),
