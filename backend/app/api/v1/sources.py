@@ -26,21 +26,10 @@ async def get_sources(
 
     sources_with_counts = result.all()
 
-    response = []
-    for source, count in sources_with_counts:
-        source_dict = {
-            'id': source.id,
-            'name': source.name,
-            'base_url': source.base_url,
-            'scraper_class': source.scraper_class,
-            'is_active': source.is_active,
-            'scrape_interval_active': source.scrape_interval_active,
-            'scrape_interval_archive': source.scrape_interval_archive,
-            'max_articles_per_scrape': source.max_articles_per_scrape,
-            'country': source.country,
-            'created_at': source.created_at,
+    return [
+        NewsSourceResponse.model_validate({
+            **source.__dict__,
             'article_count': count
-        }
-        response.append(NewsSourceResponse(**source_dict))
-
-    return response
+        })
+        for source, count in sources_with_counts
+    ]
