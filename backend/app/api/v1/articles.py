@@ -2,6 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
+from sqlalchemy.orm import selectinload
 from typing import Optional
 from datetime import datetime
 from app.api.deps import get_db
@@ -27,8 +28,8 @@ async def get_articles(
     db: AsyncSession = Depends(get_db)
 ):
     """Get paginated list of articles."""
-    # Build query
-    query = select(Article).options()
+    # Build query with eager loading of versions relationship
+    query = select(Article).options(selectinload(Article.versions))
 
     # Filter by source if provided
     if source:
@@ -60,14 +61,8 @@ async def get_articles(
     # Build response with latest version info
     items = []
     for article in articles:
-        # Get latest version
-        version_result = await db.execute(
-            select(ArticleVersion)
-            .where(ArticleVersion.article_id == article.id)
-            .order_by(desc(ArticleVersion.version_number))
-            .limit(1)
-        )
-        latest_version = version_result.scalar_one_or_none()
+        # Get latest version from already-loaded relationship (no extra query!)
+        latest_version = article.versions[0] if article.versions else None
 
         latest_version_summary = None
         if latest_version:
@@ -113,12 +108,12 @@ async def get_article_by_slug(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
 
-    # Find articles from that date
+    # Find articles from that date with eager loading
     # Use func.date() which works across different SQL databases
     result = await db.execute(
-        select(Article).where(
-            func.date(Article.first_seen_at) == article_date
-        )
+        select(Article)
+        .options(selectinload(Article.versions), selectinload(Article.source))
+        .where(func.date(Article.first_seen_at) == article_date)
     )
     articles = result.scalars().all()
 
@@ -132,19 +127,9 @@ async def get_article_by_slug(
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
 
-    # Get source
-    source_result = await db.execute(
-        select(NewsSource).where(NewsSource.id == article.source_id)
-    )
-    source = source_result.scalar_one_or_none()
-
-    # Get all versions
-    versions_result = await db.execute(
-        select(ArticleVersion)
-        .where(ArticleVersion.article_id == article.id)
-        .order_by(desc(ArticleVersion.version_number))
-    )
-    versions = versions_result.scalars().all()
+    # Use already-loaded relationships (no extra queries!)
+    source = article.source
+    versions = article.versions
 
     version_summaries = [
         ArticleVersionSummary(
@@ -196,28 +181,20 @@ async def get_article(
     db: AsyncSession = Depends(get_db)
 ):
     """Get article details with all versions."""
-    # Get article
+    # Get article with eager loading
     result = await db.execute(
-        select(Article).where(Article.id == article_id)
+        select(Article)
+        .options(selectinload(Article.versions), selectinload(Article.source))
+        .where(Article.id == article_id)
     )
     article = result.scalar_one_or_none()
 
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
 
-    # Get source
-    source_result = await db.execute(
-        select(NewsSource).where(NewsSource.id == article.source_id)
-    )
-    source = source_result.scalar_one_or_none()
-
-    # Get all versions
-    versions_result = await db.execute(
-        select(ArticleVersion)
-        .where(ArticleVersion.article_id == article_id)
-        .order_by(desc(ArticleVersion.version_number))
-    )
-    versions = versions_result.scalars().all()
+    # Use already-loaded relationships (no extra queries!)
+    source = article.source
+    versions = article.versions
 
     version_summaries = [
         ArticleVersionSummary(
