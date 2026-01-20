@@ -3,18 +3,14 @@ import { Layout } from '../components/layout/Layout'
 import { ArticleList } from '../components/article/ArticleList'
 import { ArticleListSkeleton } from '../components/common/LoadingSkeleton'
 import { useArticles } from '../hooks/useArticles'
-import { useSources } from '../hooks/useSources'
 
 export const HomePage = () => {
-  const [selectedSource, setSelectedSource] = useState<string>('')
   const [showOnlyChanges, setShowOnlyChanges] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
 
-  const { data: sources } = useSources()
   const { data: articlesData, isLoading, error } = useArticles({
-    source: selectedSource || undefined,
     has_changes: showOnlyChanges || undefined,
     limit: 50,
   })
@@ -118,62 +114,19 @@ export const HomePage = () => {
               </div>
             </div>
 
-            {/* Source filter and changes toggle */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Källa
-                </label>
-                <select
-                  value={selectedSource}
-                  onChange={(e) => setSelectedSource(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-                >
-                  <option value="">Alla källor</option>
-                  {sources && (() => {
-                    // Group sources by country
-                    const grouped = sources.reduce((acc, source) => {
-                      const country = source.country || 'Okänt'
-                      if (!acc[country]) acc[country] = []
-                      acc[country].push(source)
-                      return acc
-                    }, {} as Record<string, typeof sources>)
-
-                    // Sort countries: Sverige first, then alphabetically
-                    const sortedCountries = Object.keys(grouped).sort((a, b) => {
-                      if (a === 'Sverige') return -1
-                      if (b === 'Sverige') return 1
-                      return a.localeCompare(b, 'sv')
-                    })
-
-                    return sortedCountries.map(country => (
-                      <optgroup key={country} label={country}>
-                        {grouped[country]
-                          .sort((a, b) => a.name.localeCompare(b.name, 'sv'))
-                          .map(source => (
-                            <option key={source.id} value={source.name}>
-                              {source.name} ({source.article_count} artiklar)
-                            </option>
-                          ))
-                        }
-                      </optgroup>
-                    ))
-                  })()}
-                </select>
-              </div>
-              <div className="flex items-end">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showOnlyChanges}
-                    onChange={(e) => setShowOnlyChanges(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 dark:text-blue-400 rounded focus:ring-blue-500 dark:focus:ring-blue-400"
-                  />
-                  <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Visa endast artiklar med ändringar
-                  </span>
-                </label>
-              </div>
+            {/* Changes toggle */}
+            <div>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showOnlyChanges}
+                  onChange={(e) => setShowOnlyChanges(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 dark:text-blue-400 rounded focus:ring-blue-500 dark:focus:ring-blue-400"
+                />
+                <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Visa endast artiklar med ändringar
+                </span>
+              </label>
             </div>
           </div>
         </div>
@@ -191,11 +144,10 @@ export const HomePage = () => {
                   </span>
                 )}
               </p>
-              {(searchQuery || selectedSource || !showOnlyChanges || dateFrom || dateTo) && (
+              {(searchQuery || !showOnlyChanges || dateFrom || dateTo) && (
                 <button
                   onClick={() => {
                     setSearchQuery('')
-                    setSelectedSource('')
                     setShowOnlyChanges(true)
                     setDateFrom('')
                     setDateTo('')
