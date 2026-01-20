@@ -1,7 +1,6 @@
 """Application configuration using Pydantic settings."""
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
-import json
 import os
 
 
@@ -26,11 +25,13 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        # Don't try to load .env file in production
+        env_file=".env" if os.path.exists(".env") else None,
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore"
     )
 
 
+# Initialize settings - will read from environment variables
 settings = Settings()

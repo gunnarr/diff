@@ -26,6 +26,10 @@ async def lifespan(app: FastAPI):
     await init_db()
     logger.info("Database initialized")
 
+    # Auto-seed sources if database is empty
+    from app.seed_sources import seed_sources_if_empty
+    await seed_sources_if_empty()
+
     await setup_scheduler()
     logger.info("Scheduler setup complete")
 
