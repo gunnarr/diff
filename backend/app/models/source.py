@@ -23,4 +23,3 @@ class NewsSource(Base):
 
     # Relationships
     articles = relationship("Article", back_populates="source")
-    scrape_logs = relationship("ScrapeLog", back_populates="source")

@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List, Dict, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from app.models import NewsSource, Article, ArticleVersion, ScrapeLog
+from app.models import NewsSource, Article, ArticleVersion
 from app.scrapers import (
     SVTNyheterScraper,
     GenericRSSScraper,
@@ -40,6 +40,8 @@ class ScraperService:
 
     async def scrape_source(self, source_id: int) -> Dict:
         """Scrape articles for a specific news source."""
+        started_at = datetime.utcnow()
+
         # Get source
         result = await self.db.execute(
             select(NewsSource).where(NewsSource.id == source_id)
@@ -47,26 +49,15 @@ class ScraperService:
         source = result.scalar_one_or_none()
 
         if not source or not source.is_active:
+            logger.info(f"Skipping scrape for source {source_id}: inactive or not found")
             return {'status': 'skipped', 'reason': 'source inactive or not found'}
-
-        # Create scrape log
-        scrape_log = ScrapeLog(
-            source_id=source_id,
-            started_at=datetime.utcnow(),
-            status='running'
-        )
-        self.db.add(scrape_log)
-        await self.db.commit()
 
         logger.info(f"Starting scrape for {source.name}")
 
         # Get scraper
         scraper = self._get_scraper(source.scraper_class, source)
         if not scraper:
-            scrape_log.status = 'failed'
-            scrape_log.completed_at = datetime.utcnow()
-            scrape_log.errors = [f"Scraper class {source.scraper_class} not found"]
-            await self.db.commit()
+            logger.error(f"Scraper class {source.scraper_class} not found for {source.name}")
             return {'status': 'failed', 'reason': 'scraper not found'}
 
         articles_discovered = 0
@@ -90,29 +81,34 @@ class ScraperService:
                     logger.error(error_msg)
                     errors.append(error_msg)
 
-            # Update scrape log
-            scrape_log.status = 'success' if not errors else 'partial'
-            scrape_log.completed_at = datetime.utcnow()
-            scrape_log.articles_discovered = articles_discovered
-            scrape_log.articles_updated = articles_updated
-            scrape_log.errors = errors if errors else None
-            await self.db.commit()
+            # Calculate scrape duration
+            completed_at = datetime.utcnow()
+            duration = (completed_at - started_at).total_seconds()
+            status = 'success' if not errors else 'partial'
 
-            logger.info(f"Completed scrape for {source.name}: {articles_updated}/{articles_discovered} articles processed")
+            logger.info(
+                f"Completed scrape for {source.name}: "
+                f"status={status}, "
+                f"duration={duration:.1f}s, "
+                f"discovered={articles_discovered}, "
+                f"updated={articles_updated}, "
+                f"errors={len(errors)}"
+            )
 
             return {
-                'status': scrape_log.status,
+                'status': status,
                 'articles_discovered': articles_discovered,
                 'articles_updated': articles_updated,
                 'errors': len(errors)
             }
 
         except Exception as e:
-            logger.error(f"Fatal error scraping {source.name}: {e}")
-            scrape_log.status = 'failed'
-            scrape_log.completed_at = datetime.utcnow()
-            scrape_log.errors = [str(e)]
-            await self.db.commit()
+            completed_at = datetime.utcnow()
+            duration = (completed_at - started_at).total_seconds()
+            logger.error(
+                f"Fatal error scraping {source.name}: {e} "
+                f"(duration={duration:.1f}s)"
+            )
             return {'status': 'failed', 'reason': str(e)}
 
         finally:
