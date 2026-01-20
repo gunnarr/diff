@@ -6,11 +6,6 @@ from sqlalchemy import select
 from app.models import NewsSource, Article, ArticleVersion, ScrapeLog
 from app.scrapers import (
     SVTNyheterScraper,
-    SverigesRadioScraper,
-    SvenskaDagbladetScraper,
-    AftonbladetScraper,
-    NRKScraper,
-    DRScraper,
     GenericRSSScraper,
     BaseScraper
 )
@@ -29,11 +24,6 @@ class ScraperService:
         self.db = db
         self.scraper_registry = {
             'SVTNyheterScraper': SVTNyheterScraper,
-            'SverigesRadioScraper': SverigesRadioScraper,
-            'SvenskaDagbladetScraper': SvenskaDagbladetScraper,
-            'AftonbladetScraper': AftonbladetScraper,
-            'NRKScraper': NRKScraper,
-            'DRScraper': DRScraper,
             'GenericRSSScraper': GenericRSSScraper,
         }
 
