@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import type { DiffChange } from '../../types'
 
 interface SideBySideDiffProps {
@@ -13,7 +12,6 @@ export const SideBySideDiff = ({ changes, oldTitle, newTitle }: SideBySideDiffPr
 
   let currentOld: string[] = []
   let currentNew: string[] = []
-  let lastPosition = 0
 
   changes.forEach((change, idx) => {
     if (change.type === 'equal') {

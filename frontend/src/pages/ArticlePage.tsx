@@ -14,7 +14,6 @@ export const ArticlePage = () => {
 
   // Support both URL formats: /articles/:id and /articles/:date/:slug
   const urlPath = date && slug ? `${date}/${slug}` : id
-  const articleId = id ? Number(id) : null
 
   const { data: article, isLoading, error } = useArticle(urlPath || '')
 
