@@ -63,6 +63,7 @@ class NextScrapeResponse(BaseModel):
     next_scrape_at: Optional[datetime]
     seconds_until_scrape: Optional[int]
     source_name: Optional[str]
+    is_paused: bool = False
 
 
 @router.get("/next-scrape", response_model=NextScrapeResponse)
@@ -73,7 +74,8 @@ async def get_next_scrape():
         return NextScrapeResponse(
             next_scrape_at=None,
             seconds_until_scrape=None,
-            source_name=None
+            source_name=None,
+            is_paused=True
         )
 
     # Get all scheduled jobs
@@ -83,7 +85,8 @@ async def get_next_scrape():
         return NextScrapeResponse(
             next_scrape_at=None,
             seconds_until_scrape=None,
-            source_name=None
+            source_name=None,
+            is_paused=True
         )
 
     # Find the job with the earliest next run time
