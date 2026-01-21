@@ -11,7 +11,7 @@ from datetime import datetime
 from app.config import settings
 
 
-def __clean_text(text: str) -> str:
+def _clean_text(text: str) -> str:
     """Clean and normalize text."""
     if not text:
         return ""

@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 # Inline utility functions
-def __content_hash(text: str) -> str:
+def _content_hash(text: str) -> str:
     """Generate SHA256 hash of text content."""
     return hashlib.sha256(text.encode('utf-8')).hexdigest()
 
@@ -36,7 +36,7 @@ def _normalize_url(url: str) -> str:
     return normalized.rstrip('/')
 
 
-def __count_words(text: str) -> int:
+def _count_words(text: str) -> int:
     """Count words in text."""
     return len(text.split()) if text else 0
 
@@ -181,7 +181,7 @@ class ScraperService:
                 title=article_data['title'],
                 byline=article_data['byline'],
                 content=article_data['content'],
-                _content_hash=c_hash,
+                content_hash=c_hash,
                 captured_at=datetime.utcnow(),
                 word_count=_count_words(article_data['content']),
                 meta_description=article_data['meta_description'],
@@ -209,7 +209,7 @@ class ScraperService:
             latest_version = result.scalar_one_or_none()
 
             # Check if content changed
-            if latest_version and latest_version._content_hash != c_hash:
+            if latest_version and latest_version.content_hash != c_hash:
                 # Content changed, create new version
                 new_version_number = latest_version.version_number + 1
                 article.version_count = new_version_number
@@ -222,7 +222,7 @@ class ScraperService:
                     title=article_data['title'],
                     byline=article_data['byline'],
                     content=article_data['content'],
-                    _content_hash=c_hash,
+                    content_hash=c_hash,
                     captured_at=datetime.utcnow(),
                     word_count=_count_words(article_data['content']),
                     meta_description=article_data['meta_description'],
