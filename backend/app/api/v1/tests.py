@@ -67,9 +67,10 @@ async def run_tests():
     timestamp = datetime.utcnow()
 
     try:
-        # Run pytest with JSON report
+        # Run pytest with JSON report (use venv pytest)
+        pytest_path = "/Users/gunnar/Code/diff/backend/venv/bin/pytest"
         result = subprocess.run(
-            ["pytest", "tests/", "-v", "--tb=short", "--json-report", "--json-report-file=/tmp/test-report.json"],
+            [pytest_path, "tests/", "-v", "--tb=short", "--json-report", "--json-report-file=/tmp/test-report.json"],
             cwd="/Users/gunnar/Code/diff/backend",
             capture_output=True,
             text=True,
