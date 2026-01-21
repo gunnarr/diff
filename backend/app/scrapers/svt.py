@@ -12,13 +12,28 @@ class SVTNyheterScraper(BaseScraper):
         self.base_url = 'https://www.svt.se/nyheter'
 
     def get_rss_urls(self) -> List[str]:
-        """Return SVT RSS feed URLs."""
-        return [
+        """Return SVT RSS feed URLs including all local regions."""
+        # Main feeds
+        feeds = [
             'https://www.svt.se/nyheter/rss.xml',
             'https://www.svt.se/nyheter/inrikes/rss.xml',
             'https://www.svt.se/nyheter/utrikes/rss.xml',
             'https://www.svt.se/nyheter/lokalt/rss.xml',
         ]
+
+        # All local region feeds
+        local_regions = [
+            'blekinge', 'dalarna', 'gavleborg', 'halland', 'helsingborg',
+            'jamtland', 'jonkoping', 'norrbotten', 'orebro', 'ost',
+            'skane', 'smaland', 'sodertalje', 'sormland', 'stockholm',
+            'uppsala', 'varmland', 'vast', 'vasterbotten', 'vasternorrland',
+            'vastmanland'
+        ]
+
+        for region in local_regions:
+            feeds.append(f'https://www.svt.se/nyheter/lokalt/{region}/rss.xml')
+
+        return feeds
 
     def get_sitemap_url(self) -> Optional[str]:
         """Return SVT sitemap URL."""
