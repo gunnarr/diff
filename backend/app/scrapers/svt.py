@@ -12,14 +12,23 @@ class SVTNyheterScraper(BaseScraper):
         self.base_url = 'https://www.svt.se/nyheter'
 
     def get_rss_urls(self) -> List[str]:
-        """Return SVT RSS feed URLs including all local regions."""
-        # Main feeds
+        """Return SVT RSS feed URLs including all regions, categories, and sports."""
+        # Main news feeds
         feeds = [
+            'https://www.svt.se/rss.xml',
             'https://www.svt.se/nyheter/rss.xml',
             'https://www.svt.se/nyheter/inrikes/rss.xml',
             'https://www.svt.se/nyheter/utrikes/rss.xml',
             'https://www.svt.se/nyheter/lokalt/rss.xml',
         ]
+
+        # News category feeds
+        news_categories = ['ekonomi', 'vetenskap']
+        for category in news_categories:
+            feeds.append(f'https://www.svt.se/nyheter/{category}/rss.xml')
+
+        # Culture feed
+        feeds.append('https://www.svt.se/kultur/rss.xml')
 
         # All local region feeds
         local_regions = [
@@ -29,9 +38,21 @@ class SVTNyheterScraper(BaseScraper):
             'uppsala', 'varmland', 'vast', 'vasterbotten', 'vasternorrland',
             'vastmanland'
         ]
-
         for region in local_regions:
             feeds.append(f'https://www.svt.se/nyheter/lokalt/{region}/rss.xml')
+
+        # Sport feeds - general
+        feeds.append('https://www.svt.se/sport/rss.xml')
+
+        # Sport feeds - specific sports
+        sports = [
+            'alpint', 'bandy', 'basket', 'cykel', 'fotboll', 'friidrott',
+            'golf', 'handboll', 'innebandy', 'ishockey', 'konstakning',
+            'langdskidor', 'motorsport', 'ridsport', 'simning', 'skidskytte',
+            'tennis', 'trav', 'vintersport', 'volleyboll'
+        ]
+        for sport in sports:
+            feeds.append(f'https://www.svt.se/sport/{sport}/rss.xml')
 
         return feeds
 
@@ -40,8 +61,15 @@ class SVTNyheterScraper(BaseScraper):
         return 'https://www.svt.se/sitemap.xml'
 
     def is_article_url(self, url: str) -> bool:
-        """Check if URL is a valid SVT news article."""
-        # SVT article URLs typically follow pattern: svt.se/nyheter/...
+        """Check if URL is a valid SVT article (news, sport, or culture)."""
+        # SVT article URLs follow patterns like:
+        # - svt.se/nyheter/.../...
+        # - svt.se/sport/.../...
+        # - svt.se/kultur/.../...
         # But not just section pages like svt.se/nyheter/inrikes
-        pattern = r'https://www\.svt\.se/nyheter/[^/]+/.+'
-        return bool(re.match(pattern, url))
+        patterns = [
+            r'https://www\.svt\.se/nyheter/[^/]+/.+',
+            r'https://www\.svt\.se/sport/[^/]+/.+',
+            r'https://www\.svt\.se/kultur/[^/]+/.+'
+        ]
+        return any(re.match(pattern, url) for pattern in patterns)
