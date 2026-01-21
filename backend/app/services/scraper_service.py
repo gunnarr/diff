@@ -11,6 +11,7 @@ from app.scrapers import (
     GenericRSSScraper,
     BaseScraper
 )
+from app.database import async_session
 import logging
 import asyncio
 
@@ -104,13 +105,16 @@ class ScraperService:
 
             async def process_with_limit(url: str) -> tuple:
                 async with semaphore:
-                    try:
-                        await self._process_article(source, scraper, url)
-                        return (True, None)
-                    except Exception as e:
-                        error_msg = f"Error processing {url}: {str(e)}"
-                        logger.error(error_msg)
-                        return (False, error_msg)
+                    # Create a new database session for each article
+                    async with async_session() as session:
+                        try:
+                            await self._process_article(session, source, scraper, url)
+                            return (True, None)
+                        except Exception as e:
+                            error_msg = f"Error processing {url}: {str(e)}"
+                            logger.error(error_msg)
+                            await session.rollback()
+                            return (False, error_msg)
 
             # Process all URLs concurrently
             results = await asyncio.gather(*[process_with_limit(url) for url in urls])
@@ -155,12 +159,12 @@ class ScraperService:
         finally:
             await scraper.close()
 
-    async def _process_article(self, source: NewsSource, scraper: BaseScraper, url: str):
-        """Process a single article URL."""
+    async def _process_article(self, session: AsyncSession, source: NewsSource, scraper: BaseScraper, url: str):
+        """Process a single article URL with its own database session."""
         normalized_url = _normalize_url(url)
 
         # Check if article exists
-        result = await self.db.execute(
+        result = await session.execute(
             select(Article).where(Article.url == normalized_url)
         )
         article = result.scalar_one_or_none()
@@ -188,8 +192,8 @@ class ScraperService:
                 check_count=1,
                 version_count=1
             )
-            self.db.add(article)
-            await self.db.flush()
+            session.add(article)
+            await session.flush()
 
             # Create first version
             version = ArticleVersion(
@@ -206,8 +210,8 @@ class ScraperService:
                 published_date=article_data['published_date'],
                 modified_date=article_data['modified_date']
             )
-            self.db.add(version)
-            await self.db.commit()
+            session.add(version)
+            await session.commit()
 
             logger.info(f"New article: {article_data['title'][:50]}...")
 
@@ -217,7 +221,7 @@ class ScraperService:
             article.check_count += 1
 
             # Get latest version
-            result = await self.db.execute(
+            result = await session.execute(
                 select(ArticleVersion)
                 .where(ArticleVersion.article_id == article.id)
                 .order_by(ArticleVersion.version_number.desc())
@@ -247,10 +251,10 @@ class ScraperService:
                     published_date=article_data['published_date'],
                     modified_date=article_data['modified_date']
                 )
-                self.db.add(version)
-                await self.db.commit()
+                session.add(version)
+                await session.commit()
 
                 logger.info(f"Updated article (v{new_version_number}): {article_data['title'][:50]}...")
             else:
                 # No change
-                await self.db.commit()
+                await session.commit()
