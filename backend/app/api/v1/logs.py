@@ -66,29 +66,44 @@ async def get_logs(
             recent_lines = all_lines[-limit*3:] if len(all_lines) > limit*3 else all_lines
         
         parsed_logs = []
-        
-        # Keywords to identify scraping-related logs
-        scraping_keywords = [
-            'scrape', 'scraper', 'discover', 'fetch', 'article',
-            'scheduler', 'job', 'SVT', 'httpx', 'trafilatura'
-        ]
-        
-        # Filter logs to exclude HTTP API requests
-        exclude_keywords = [
-            'GET /api', 'POST /api', 'PUT /api', 'DELETE /api',
-            'HTTP/1.1', '127.0.0.1', 'localhost'
-        ]
-        
+
         for line in recent_lines:
-            # Skip lines with exclude keywords
-            if any(keyword in line for keyword in exclude_keywords):
+            # Skip internal API requests and database queries
+            exclude_patterns = [
+                '127.0.0.1',
+                '/api/v1/',
+                'sqlalchemy.engine',
+                'BEGIN (implicit)',
+                'COMMIT',
+                'ROLLBACK',
+                'SELECT ',
+                'UPDATE ',
+                'INSERT ',
+                'cached since'
+            ]
+
+            if any(pattern in line for pattern in exclude_patterns):
                 continue
-                
-            # If filtering, only include scraping-related logs
+
+            # If filtering, only show lines with URLs or important scraping events
             if filter_scraping:
-                if not any(keyword.lower() in line.lower() for keyword in scraping_keywords):
+                # Check if line contains SVT URL or important keywords
+                has_svt_url = 'https://www.svt.se' in line
+
+                important_keywords = [
+                    'Completed scrape',
+                    'discovered',
+                    'updated',
+                    'errors',
+                    'Scheduled',
+                    'Scrape job',
+                    'HTTP Request: GET https://www.svt.se'
+                ]
+                has_important = any(keyword in line for keyword in important_keywords)
+
+                if not (has_svt_url or has_important):
                     continue
-            
+
             entry = parse_log_line(line)
             if entry:
                 parsed_logs.append(entry)
