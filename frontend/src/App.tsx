@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { HomePage } from './pages/HomePage'
 import { ArticlePage } from './pages/ArticlePage'
+import { LiveLogPage } from './pages/LiveLogPage'
 import { useDarkMode } from './hooks/useDarkMode'
 
 const queryClient = new QueryClient({
@@ -24,6 +25,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/articles/:date/:slug" element={<ArticlePage />} />
           <Route path="/articles/:id" element={<ArticlePage />} />
+          <Route path="/livelog" element={<LiveLogPage />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
