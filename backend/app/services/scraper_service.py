@@ -22,7 +22,7 @@ def __content_hash(text: str) -> str:
     return hashlib.sha256(text.encode('utf-8')).hexdigest()
 
 
-def __normalize_url(url: str) -> str:
+def _normalize_url(url: str) -> str:
     """Normalize URL by removing fragments."""
     parsed = urlparse(url)
     normalized = urlunparse((
