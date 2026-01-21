@@ -4,11 +4,13 @@ interface NextScrapeData {
   next_scrape_at: string | null
   seconds_until_scrape: number | null
   source_name: string | null
+  is_paused?: boolean
 }
 
 export const NextScrapeCountdown = () => {
   const [countdown, setCountdown] = useState<number | null>(null)
   const [sourceName, setSourceName] = useState<string | null>(null)
+  const [isPaused, setIsPaused] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
   // Fetch next scrape time
@@ -16,10 +18,14 @@ export const NextScrapeCountdown = () => {
     try {
       const response = await fetch('/api/v1/next-scrape')
       const data: NextScrapeData = await response.json()
-      
+
+      setIsPaused(data.is_paused || false)
+
       if (data.seconds_until_scrape !== null) {
         setCountdown(data.seconds_until_scrape)
         setSourceName(data.source_name)
+      } else {
+        setCountdown(null)
       }
       setIsLoading(false)
     } catch (error) {
@@ -55,6 +61,27 @@ export const NextScrapeCountdown = () => {
     return (
       <span className="text-sm text-gray-500 dark:text-gray-400">
         Laddar...
+      </span>
+    )
+  }
+
+  if (isPaused) {
+    return (
+      <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+        <svg
+          className="w-4 h-4 mr-1.5 text-gray-400 dark:text-gray-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+        Pausad
       </span>
     )
   }
