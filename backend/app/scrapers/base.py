@@ -157,10 +157,29 @@ class BaseScraper(ABC):
 
     def _extract_byline(self, soup: BeautifulSoup) -> str:
         """Extract article author/byline."""
-        # Try common author meta tags
+        # Try schema.org author markup (itemProp="author") - most accurate for SVT
+        authors = []
+        author_elements = soup.find_all(attrs={'itemprop': 'author'})
+        for elem in author_elements:
+            author_text = elem.get_text(strip=True)
+            if author_text and author_text not in authors:
+                authors.append(author_text)
+
+        if authors:
+            # Join multiple authors with "och" for Swedish articles
+            if len(authors) == 2:
+                return f"{authors[0]} och {authors[1]}"
+            elif len(authors) > 2:
+                return ", ".join(authors[:-1]) + f" och {authors[-1]}"
+            return authors[0]
+
+        # Fallback: Try common author meta tags
         author_meta = soup.find('meta', {'name': 'author'})
         if author_meta and author_meta.get('content'):
-            return author_meta.get('content', '')
+            content = author_meta.get('content', '')
+            # Skip generic source names like "SVT Nyheter" as they're not actual authors
+            if content and content not in ['SVT Nyheter', 'SVT', 'Sveriges Television']:
+                return content
 
         # Try article:author
         article_author = soup.find('meta', property='article:author')

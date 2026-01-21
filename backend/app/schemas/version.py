@@ -35,6 +35,11 @@ class ArticleVersionSummary(BaseModel):
     title: Optional[str]
     captured_at: datetime
     word_count: Optional[int]
+    content: Optional[str] = None
+    byline: Optional[str] = None
+    published_date: Optional[datetime] = None
+    meta_description: Optional[str] = None
+    meta_keywords: Optional[str] = None
 
     class Config:
         from_attributes = True

@@ -21,14 +21,19 @@ router = APIRouter()
 
 def _build_article_detail_response(article: Article) -> ArticleDetailResponse:
     """Build article detail response from article model (with loaded relationships)."""
-    # Build version summaries (lightweight, no content)
+    # Build version summaries with full content for detail view
     version_summaries = [
         ArticleVersionSummary(
             id=v.id,
             version_number=v.version_number,
             title=v.title,
             captured_at=v.captured_at,
-            word_count=v.word_count
+            word_count=v.word_count,
+            content=v.content,
+            byline=v.byline,
+            published_date=v.published_date,
+            meta_description=v.meta_description,
+            meta_keywords=v.meta_keywords
         )
         for v in article.versions
     ]

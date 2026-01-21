@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { NextScrapeCountdown } from '../common/NextScrapeCountdown'
 
 export const Header = () => {
   return (
@@ -9,8 +10,8 @@ export const Header = () => {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               Nyhetsdiff
             </h1>
-            <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
-              Spåra ändringar i svenska nyhetsartiklar
+            <span className="ml-2">
+              <NextScrapeCountdown />
             </span>
           </Link>
           <nav className="flex items-center space-x-4">
