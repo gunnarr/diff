@@ -77,18 +77,28 @@ class BaseScraper(ABC):
 
         return False
 
-    async def discover_articles(self, limit: int = 50) -> List[str]:
-        """Discover article URLs from RSS/sitemap."""
+    async def discover_articles(self, limit: int = 50, concurrent_feeds: int = 8) -> List[str]:
+        """Discover article URLs from RSS/sitemap with concurrent feed fetching."""
         urls = []
+        feed_urls = self.get_rss_urls()
 
-        # Try RSS feeds
-        for feed_url in self.get_rss_urls():
-            try:
-                feed_urls = await self._parse_rss(feed_url)
-                urls.extend(feed_urls)
-            except Exception as e:
-                print(f"Error parsing RSS {feed_url}: {e}")
-                continue
+        # Create semaphore to limit concurrent requests
+        semaphore = asyncio.Semaphore(concurrent_feeds)
+
+        async def fetch_feed_with_limit(feed_url: str) -> List[str]:
+            async with semaphore:
+                try:
+                    return await self._parse_rss(feed_url)
+                except Exception as e:
+                    print(f"Error parsing RSS {feed_url}: {e}")
+                    return []
+
+        # Fetch all RSS feeds concurrently (limited by semaphore)
+        results = await asyncio.gather(*[fetch_feed_with_limit(url) for url in feed_urls])
+
+        # Flatten results
+        for feed_urls_list in results:
+            urls.extend(feed_urls_list)
 
         # Filter to valid article URLs and deduplicate
         urls = list(set([u for u in urls if self.is_article_url(u) and not self.is_live_article(u)]))
@@ -97,7 +107,7 @@ class BaseScraper(ABC):
 
     async def fetch_article(self, url: str) -> Dict:
         """Fetch and extract article content."""
-        await asyncio.sleep(5.0)  # Rate limit: 5 seconds between requests
+        await asyncio.sleep(1.0)  # Rate limit: 1 second between requests
 
         try:
             response = await self.client.get(url)
@@ -254,7 +264,7 @@ class BaseScraper(ABC):
 
     async def _parse_rss(self, feed_url: str) -> List[str]:
         """Parse RSS feed and extract article URLs."""
-        await asyncio.sleep(5.0)  # Rate limit: 5 seconds between requests
+        await asyncio.sleep(0.5)  # Rate limit: 0.5 seconds between requests
 
         try:
             response = await self.client.get(feed_url)

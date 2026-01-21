@@ -12,6 +12,7 @@ from app.scrapers import (
     BaseScraper
 )
 import logging
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -89,21 +90,37 @@ class ScraperService:
         errors = []
 
         try:
-            # Discover article URLs
-            urls = await scraper.discover_articles(limit=source.max_articles_per_scrape)
+            # Discover article URLs (with 8 concurrent feed fetches)
+            urls = await scraper.discover_articles(
+                limit=source.max_articles_per_scrape,
+                concurrent_feeds=8
+            )
             articles_discovered = len(urls)
 
             logger.info(f"Discovered {articles_discovered} articles for {source.name}")
 
-            # Process each URL
-            for url in urls:
-                try:
-                    await self._process_article(source, scraper, url)
+            # Process articles concurrently (limited to 8 at a time)
+            semaphore = asyncio.Semaphore(8)
+
+            async def process_with_limit(url: str) -> tuple:
+                async with semaphore:
+                    try:
+                        await self._process_article(source, scraper, url)
+                        return (True, None)
+                    except Exception as e:
+                        error_msg = f"Error processing {url}: {str(e)}"
+                        logger.error(error_msg)
+                        return (False, error_msg)
+
+            # Process all URLs concurrently
+            results = await asyncio.gather(*[process_with_limit(url) for url in urls])
+
+            # Count successes and collect errors
+            for success, error in results:
+                if success:
                     articles_updated += 1
-                except Exception as e:
-                    error_msg = f"Error processing {url}: {str(e)}"
-                    logger.error(error_msg)
-                    errors.append(error_msg)
+                else:
+                    errors.append(error)
 
             # Calculate scrape duration
             completed_at = datetime.utcnow()
