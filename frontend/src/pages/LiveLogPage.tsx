@@ -16,6 +16,7 @@ export const LiveLogPage = () => {
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [isLive, setIsLive] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
+  const [isScraping, setIsScraping] = useState(false)
 
   const fetchLogs = async () => {
     try {
@@ -25,6 +26,31 @@ export const LiveLogPage = () => {
       setLastUpdate(new Date())
     } catch (error) {
       console.error('Failed to fetch logs:', error)
+    }
+  }
+
+  const triggerScrape = async () => {
+    setIsScraping(true)
+    try {
+      const response = await fetch('/api/v1/sources/1/scrape', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        // Wait a moment then refresh logs
+        setTimeout(() => {
+          fetchLogs()
+        }, 1000)
+      } else {
+        console.error('Failed to trigger scrape:', await response.text())
+      }
+    } catch (error) {
+      console.error('Failed to trigger scrape:', error)
+    } finally {
+      setIsScraping(false)
     }
   }
 
@@ -70,6 +96,27 @@ export const LiveLogPage = () => {
             </p>
           </div>
           <div className="flex items-center space-x-4">
+            <button
+              onClick={triggerScrape}
+              disabled={isScraping}
+              className={`px-6 py-2 rounded-md font-medium transition-colors ${
+                isScraping
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-red-600 text-white hover:bg-red-700'
+              }`}
+            >
+              {isScraping ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Hämtar...
+                </span>
+              ) : (
+                'Hämta artiklar'
+              )}
+            </button>
             <button
               onClick={() => setIsLive(!isLive)}
               className={`px-4 py-2 rounded-md font-medium transition-colors ${
