@@ -9,6 +9,7 @@ import feedparser
 from bs4 import BeautifulSoup
 from datetime import datetime
 from app.config import settings
+import xml.etree.ElementTree as ET
 
 
 def _clean_text(text: str) -> str:
@@ -99,6 +100,16 @@ class BaseScraper(ABC):
         # Flatten results
         for feed_urls_list in results:
             urls.extend(feed_urls_list)
+
+        # Also try sitemap if available
+        sitemap_url = self.get_sitemap_url()
+        if sitemap_url:
+            try:
+                sitemap_urls = await self._parse_sitemap(sitemap_url)
+                urls.extend(sitemap_urls)
+                print(f"Discovered {len(sitemap_urls)} URLs from sitemap")
+            except Exception as e:
+                print(f"Error parsing sitemap {sitemap_url}: {e}")
 
         # Filter to valid article URLs and deduplicate
         urls = list(set([u for u in urls if self.is_article_url(u) and not self.is_live_article(u)]))
@@ -274,6 +285,47 @@ class BaseScraper(ABC):
             return [entry.link for entry in feed.entries if hasattr(entry, 'link')]
         except Exception as e:
             print(f"Error parsing RSS {feed_url}: {e}")
+            return []
+
+    async def _parse_sitemap(self, sitemap_url: str) -> List[str]:
+        """Parse sitemap and extract article URLs."""
+        await asyncio.sleep(0.5)  # Rate limit: 0.5 seconds between requests
+
+        try:
+            response = await self.client.get(sitemap_url)
+            response.raise_for_status()
+
+            urls = []
+            root = ET.fromstring(response.text)
+
+            # Handle sitemap index (points to other sitemaps)
+            namespace = {'ns': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
+
+            # Check if this is a sitemap index
+            sitemaps = root.findall('.//ns:sitemap/ns:loc', namespace)
+            if sitemaps:
+                # This is a sitemap index, fetch each sitemap
+                for sitemap_elem in sitemaps[:10]:  # Limit to first 10 sitemaps
+                    sub_sitemap_url = sitemap_elem.text
+                    if sub_sitemap_url:
+                        try:
+                            sub_response = await self.client.get(sub_sitemap_url)
+                            sub_response.raise_for_status()
+                            sub_root = ET.fromstring(sub_response.text)
+                            sub_urls = sub_root.findall('.//ns:url/ns:loc', namespace)
+                            urls.extend([url.text for url in sub_urls if url.text])
+                            await asyncio.sleep(0.5)
+                        except Exception as e:
+                            print(f"Error parsing sub-sitemap {sub_sitemap_url}: {e}")
+                            continue
+            else:
+                # This is a regular sitemap
+                url_elements = root.findall('.//ns:url/ns:loc', namespace)
+                urls = [url.text for url in url_elements if url.text]
+
+            return urls
+        except Exception as e:
+            print(f"Error parsing sitemap {sitemap_url}: {e}")
             return []
 
     async def close(self):
